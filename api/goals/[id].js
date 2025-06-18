@@ -1,4 +1,3 @@
-//reset on every request
 let goals = [
   { id: 1, title: "Learn JavaScript", completed: false },
   { id: 2, title: "Build a web app", completed: false },
@@ -13,33 +12,29 @@ export default function handler(req, res) {
   } = req;
 
   const goalId = parseInt(id, 10);
-  if (isNaN(goalId)) {
-    return res.status(400).json({ error: "Invalid goal ID." });
-  }
-
   const index = goals.findIndex((g) => g.id === goalId);
-  if (index === -1) {
-    return res.status(404).json({ error: "Goal not found." });
+
+  if (isNaN(goalId)) {
+    return res.status(400).json({ error: "Invalid ID" });
   }
 
   switch (method) {
     case "GET":
+      if (index === -1) return res.status(404).json({ error: "Goal not found" });
       return res.status(200).json(goals[index]);
 
     case "PUT":
-      goals[index] = {
-        ...goals[index],
-        ...body,
-        id: goalId, // preserve ID
-      };
+      if (index === -1) return res.status(404).json({ error: "Goal not found" });
+      goals[index] = { ...goals[index], ...body };
       return res.status(200).json(goals[index]);
 
     case "DELETE":
-      const [deleted] = goals.splice(index, 1);
+      if (index === -1) return res.status(404).json({ error: "Goal not found" });
+      const deleted = goals.splice(index, 1)[0];
       return res.status(200).json(deleted);
 
     default:
       res.setHeader("Allow", ["GET", "PUT", "DELETE"]);
-      return res.status(405).json({ error: `Method ${method} not allowed.` });
+      return res.status(405).json({ error: `Method ${method} not allowed` });
   }
 }
