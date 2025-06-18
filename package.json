@@ -1,0 +1,15 @@
+{
+  "name": "simple-serverless-vercel",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {},
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "vercel"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

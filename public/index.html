@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Goals CRUD App</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 2rem;
+      background-color: #f8f9fa;
+      color: #333;
+    }
+    h1 {
+      color: #0070f3;
+    }
+    button {
+      padding: 0.4rem 0.8rem;
+      background-color: #0070f3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 0.5rem;
+    }
+    button.delete {
+      background-color: #dc3545;
+    }
+    input[type="text"] {
+      padding: 0.4rem;
+      margin-right: 0.5rem;
+      width: 250px;
+    }
+    .goal {
+      background: #fff;
+      margin: 0.5rem 0;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎯 Goals CRUD (Serverless on Vercel)</h1>
+
+  <h2>Add New Goal</h2>
+  <form id="addGoalForm">
+    <input type="text" id="goalInput" placeholder="Enter goal title" required />
+    <button type="submit">Add</button>
+  </form>
+
+  <h2>All Goals</h2>
+  <div id="goalList">Loading...</div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const goalList = document.getElementById("goalList");
+      const goalInput = document.getElementById("goalInput");
+      const addGoalForm = document.getElementById("addGoalForm");
+
+      async function safeJson(res) {
+        const text = await res.text();
+        try {
+          return JSON.parse(text);
+        } catch {
+          throw new Error("Invalid JSON: " + text);
+        }
+      }
+
+      async function loadGoals() {
+        goalList.textContent = "Loading...";
+        try {
+          const res = await fetch("/api/goals");
+          if (!res.ok) throw new Error("Fetch failed: " + res.status);
+          const goals = await safeJson(res);
+          goalList.innerHTML = "";
+          goals.forEach(goal => {
+            const div = document.createElement("div");
+            div.className = "goal";
+            div.innerHTML = `
+              <strong>${goal.title}</strong> - ${goal.completed ? "✅" : "❌"}<br/>
+              <input type="text" value="${goal.title}" id="edit-${goal.id}" />
+              <button data-id="${goal.id}" class="update-btn">Update</button>
+              <button data-id="${goal.id}" class="delete-btn delete">Delete</button>
+            `;
+            goalList.appendChild(div);
+          });
+        } catch (err) {
+          goalList.innerHTML = `<p style="color:red;">⚠️ ${err.message}</p>`;
+        }
+      }
+
+      addGoalForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const title = goalInput.value.trim();
+        if (!title) return;
+        try {
+          const res = await fetch("/api/goals", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title })
+          });
+          if (!res.ok) throw new Error("POST failed: " + res.status);
+          await loadGoals();
+          goalInput.value = "";
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+
+      goalList.addEventListener("click", async (e) => {
+        const id = e.target.dataset.id;
+        if (!id) return;
+
+        if (e.target.classList.contains("delete-btn")) {
+          try {
+            const res = await fetch(`/api/goals/${id}`, { method: "DELETE" });
+            if (!res.ok) throw new Error("DELETE failed");
+            await loadGoals();
+          } catch (err) {
+            alert(err.message);
+          }
+        }
+
+        if (e.target.classList.contains("update-btn")) {
+          const updatedTitle = document.getElementById(`edit-${id}`).value.trim();
+          if (!updatedTitle) return;
+          try {
+            const res = await fetch(`/api/goals/${id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ title: updatedTitle })
+            });
+            if (!res.ok) throw new Error("PUT failed");
+            await loadGoals();
+          } catch (err) {
+            alert(err.message);
+          }
+        }
+      });
+
+      loadGoals();
+    });
+  </script>
+</body>
+</html>
